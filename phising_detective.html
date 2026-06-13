@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detective Game 🕵️‍♂️ - Text Edition</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-email: #020617;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-top: 20px;
+        }
+
+        h1 { text-align: center; margin-bottom: 10px; color: var(--accent-blue); font-size: 2rem; }
+        .subtitle { text-align: center; color: var(--text-secondary); margin-bottom: 25px; }
+        .scenario-counter { text-align: center; color: var(--accent-blue); font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; }
+
+        .view { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; }
+        input[type="text"], textarea {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+            background-color: var(--bg-dark); color: white; font-size: 1rem; margin-bottom: 20px;
+        }
+        input[type="text"]:focus, textarea:focus { outline: 2px solid var(--accent-blue); border-color: transparent; }
+
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--accent-blue); color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #334155; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .rules-box {
+            background-color: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue);
+            padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 25px; font-size: 0.95rem; line-height: 1.5;
+        }
+
+        /* Email Viewer Styling */
+        .email-viewer {
+            background-color: var(--bg-email);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #1e293b;
+            padding: 15px;
+            border-bottom: 1px solid #334155;
+        }
+        .email-meta {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 10px;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        .email-meta-label { color: var(--text-secondary); font-weight: 600; }
+        .email-meta-value { color: var(--text-primary); word-break: break-all; }
+        .email-subject {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #334155;
+        }
+        .email-body {
+            padding: 20px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+        }
+        .fake-link {
+            color: var(--accent-blue);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .choice-btn {
+            padding: 15px; border-radius: 8px; border: 2px solid #334155; background-color: var(--bg-dark);
+            color: white; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.2s;
+        }
+        .choice-btn:hover { border-color: var(--text-secondary); }
+        .choice-btn.selected-legit { border-color: var(--accent-green); background-color: rgba(34, 197, 94, 0.1); color: var(--accent-green); }
+        .choice-btn.selected-susp { border-color: var(--accent-yellow); background-color: rgba(234, 179, 8, 0.1); color: var(--accent-yellow); }
+        .choice-btn.selected-phish { border-color: var(--accent-red); background-color: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+
+        .debrief-box {
+            background-color: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--accent-green);
+            padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 25px;
+        }
+        .debrief-box h3 { color: var(--accent-green); margin-bottom: 10px; }
+        .debrief-box ul { margin-left: 20px; margin-top: 10px; color: var(--text-secondary); }
+        .debrief-box li { margin-bottom: 8px; }
+
+        .report-card {
+            background-color: var(--bg-dark); border: 1px solid #334155; border-radius: 8px; padding: 25px; margin-bottom: 20px;
+        }
+        .score-display { text-align: center; font-size: 2.5rem; font-weight: bold; color: var(--accent-green); margin: 20px 0; }
+        .feedback-item { margin-bottom: 15px; }
+        .feedback-label { color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+        .feedback-value { font-size: 1rem; margin-top: 5px; color: var(--text-primary); }
+
+        @media (max-width: 600px) {
+            .choices { grid-template-columns: 1fr; }
+            .container { padding: 20px; }
+            .email-meta { grid-template-columns: 1fr; gap: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🕵️‍♂️ Phishing Detective</h1>
+    <p class="subtitle">Cybersecurity Analyst Training - 25 Scenarios</p>
+
+    <!-- VIEW 1: START -->
+    <div id="view-start" class="view active">
+        <div class="rules-box">
+            <strong>🎯 YOUR MISSION:</strong><br>
+            You will analyze 25 intercepted messages. For each scenario, you must:<br>
+            1. Read the sender, subject, and body carefully.<br>
+            2. Decide if it is: Legitimate ✅, Suspicious ⚠️, or Phishing ❌.<br>
+            3. Explain WHY based on the red flags you identify.<br><br>
+            <em>Points are awarded for correct classifications and detailed explanations.</em>
+        </div>
+
+        <label for="analyst-name">Analyst Name:</label>
+        <input type="text" id="analyst-name" placeholder="Enter your name or alias">
+
+        <button class="btn btn-primary" onclick="startMission()">Begin Simulation</button>
+    </div>
+
+    <!-- VIEW 2: GAME -->
+    <div id="view-game" class="view">
+        <div class="scenario-counter" id="scenario-counter">Scenario 1 of 25</div>
+        
+        <!-- Text-based Email Viewer -->
+        <div class="email-viewer">
+            <div class="email-header">
+                <div class="email-meta">
+                    <span class="email-meta-label">From:</span>
+                    <span class="email-meta-value" id="email-from"></span>
+                </div>
+                <div class="email-meta">
+                    <span class="email-meta-label">To:</span>
+                    <span class="email-meta-value">you@yourcompany.com</span>
+                </div>
+                <div class="email-meta">
+                    <span class="email-meta-label">Date:</span>
+                    <span class="email-meta-value">Today, 9:14 AM</span>
+                </div>
+                <div class="email-subject" id="email-subject"></div>
+            </div>
+            <div class="email-body" id="email-body"></div>
+        </div>
+
+        <label>1. Select Threat Level:</label>
+        <div class="choices">
+            <button class="choice-btn" onclick="selectChoice('legit', this)">✅ Legitimate</button>
+            <button class="choice-btn" onclick="selectChoice('susp', this)">⚠️ Suspicious</button>
+            <button class="choice-btn" onclick="selectChoice('phish', this)">❌ Phishing</button>
+        </div>
+
+        <label for="explanation">2. Explain WHY (Look for: weird sender domains, urgency, strange links, requests for info):</label>
+        <textarea id="explanation" rows="4" placeholder="I believe this is... because I noticed..."></textarea>
+
+        <button class="btn btn-primary" onclick="submitAnalysis()">Submit Analysis</button>
+    </div>
+
+    <!-- VIEW 3: DEBRIEF -->
+    <div id="view-debrief" class="view">
+        <h2 style="text-align: center; margin-bottom: 20px;">📋 Analyst Debrief</h2>
+        
+        <div class="debrief-box">
+            <h3 id="debrief-title">Correct Answer: Phishing</h3>
+            <p id="debrief-explanation" style="color: var(--text-primary); line-height: 1.6;"></p>
+            <p style="margin-top: 15px; font-weight: bold; color: var(--text-primary);">Key Red Flags:</p>
+            <ul id="debrief-flags"></ul>
+        </div>
+
+        <div class="feedback-item">
+            <div class="feedback-label">Your Explanation:</div>
+            <div class="feedback-value" id="user-expl-display" style="font-style: italic; color: var(--text-secondary);"></div>
+        </div>
+
+        <div class="score-display" id="scenario-score">85 / 100 PTS</div>
+
+        <button class="btn btn-primary" id="next-btn" onclick="nextScenario()">Next Scenario</button>
+    </div>
+
+    <!-- VIEW 4: FINAL REPORT -->
+    <div id="view-final" class="view">
+        <h2 style="text-align: center; margin-bottom: 20px;">🏆 Final Mission Report</h2>
+        
+        <div class="report-card">
+            <div class="feedback-item">
+                <div class="feedback-label">Analyst</div>
+                <div class="feedback-value" id="final-name"></div>
+            </div>
+            <div class="feedback-item">
+                <div class="feedback-label">Scenarios Completed</div>
+                <div class="feedback-value" id="final-completed"></div>
+            </div>
+            <div class="score-display" id="final-score">0 / 2500 PTS</div>
+            <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                Copy this report and submit it to your instructor for final grading.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" onclick="copyFinalReport()">📋 Copy Final Report</button>
+        <button class="btn btn-secondary" onclick="resetGame()">Restart Simulation</button>
+    </div>
+</div>
+
+<script>
+    // 25 PRE-LOADED TEXT-BASED SCENARIOS
+    const scenarios = [
+        {
+            id: 1, from: "security@microsoft-online-verify.com", subject: "Urgent: Account Will Be Suspended",
+            body: "Dear User,\n\nYour Microsoft 365 account will be suspended in 24 hours due to unusual activity. Click here to verify your credentials immediately and prevent account closure.\n\nMicrosoft Security Team",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Classic credential harvesting attack impersonating Microsoft. The attacker creates false urgency to steal login credentials.",
+            redFlags: ["Fake sender domain: 'microsoft-online-verify.com' is not Microsoft's official domain.", "Artificial urgency: '24 hours' pressure tactic.", "Request to verify credentials via an email link (Microsoft never does this)."]
+        },
+        {
+            id: 2, from: "alerts@chase-bank-security.net", subject: "Suspicious Activity Detected",
+            body: "We detected unusual activity on your account ending in 4829. Click here to verify your identity and secure your account immediately.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Sophisticated bank impersonation attack. Uses official-looking branding but a fake domain to steal banking credentials.",
+            redFlags: ["Fake domain: 'chase-bank-security.net' is not Chase's real domain (chase.com).", "Vague 'unusual activity' with no specific transaction details.", "Link asks for full login credentials."]
+        },
+        {
+            id: 3, from: "it-support@company-helpdesk.com", subject: "URGENT: Security Breach Detected",
+            body: "Your computer has been compromised by malware. Download this security tool immediately to fix the issue: [Link to fake_tool.exe]",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Fake IT support scam attempting to install malware. Impersonates internal IT to bypass security awareness.",
+            redFlags: ["External email claiming to be internal IT.", "Request to download and run an unknown executable file (.exe).", "Extreme urgency without following normal IT ticketing procedures."]
+        },
+        {
+            id: 4, from: "billing@supplier-invoice-updates.com", subject: "Invoice #78391 - Payment Required",
+            body: "Please find attached invoice #78391. Please note our banking details have recently changed. Please send all future payments to the new bank account listed in the attachment.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Invoice fraud / Business Email Compromise (BEC). Attacker changed payment details to divert funds to a fraudulent account.",
+            redFlags: ["Unexpected change to payment procedures via email.", "New bank account details provided in an attachment.", "Slight variations in the supplier's email domain."]
+        },
+        {
+            id: 5, from: "delivery@fedex-track-update.net", subject: "Delivery Attempt Failed",
+            body: "We attempted to deliver your package but failed. Click here to reschedule delivery and confirm your address to avoid return to sender.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Fake shipping notification mimicking FedEx. Attempts to steal personal information or install malware.",
+            redFlags: ["Fake domain: 'fedex-track-update.net' is not FedEx's official domain.", "Package you weren't expecting.", "Link doesn't lead to the official FedEx website."]
+        },
+        {
+            id: 6, from: "service@paypa1.com", subject: "Account Limited",
+            body: "Your PayPal account has been limited due to suspicious activity. Verify your identity within 24 hours or your account will be permanently closed.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Classic PayPal phishing with typosquatting. Uses the number '1' instead of the letter 'l' in the domain.",
+            redFlags: ["Typosquatting: 'paypa1.com' uses number 1 instead of letter l.", "Artificial urgency: '24 hours'.", "Generic threat: 'Account Limited'."]
+        },
+        {
+            id: 7, from: "billing@netflix-verify-account.com", subject: "Payment Failed - Restart Service",
+            body: "Your Netflix payment failed. Click here to update your payment information and restart your subscription before your account is canceled.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Netflix impersonation attack. Sophisticated phishing mimicking Netflix branding to steal payment details.",
+            redFlags: ["Fake domain: 'netflix-verify-account.com' is not Netflix.", "Request for payment information via an email link.", "Urgency to 'restart service'."]
+        },
+        {
+            id: 8, from: "refund@amazon-security-team.net", subject: "Refund Processing",
+            body: "Your refund of $89.99 is ready. Click here to enter your bank details to receive the refund directly to your account.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Amazon refund scam. Attacker promises a refund to steal banking information.",
+            redFlags: ["Fake Amazon domain.", "Request for bank details to receive a refund (Amazon processes refunds to the original payment method).", "Grammar errors in the email body."]
+        },
+        {
+            id: 9, from: "ceo.name@gmail.com", subject: "Quick Favor",
+            body: "I'm in a meeting and can't talk. I need you to buy 5 Apple gift cards immediately for a client presentation. I will reimburse you by end of day.",
+            correctAnswer: "phish", correctText: "❌ Phishing (CEO Fraud)",
+            explanation: "Business Email Compromise/CEO Fraud. Attacker impersonates leadership to bypass normal financial controls.",
+            redFlags: ["Request for gift cards (universal red flag for corporate fraud).", "Manufactured urgency: 'in a meeting, can't talk'.", "Personal email domain (@gmail.com) for a CEO request."]
+        },
+        {
+            id: 10, from: "hr@company-benefits-portal.com", subject: "Updated Benefits Enrollment",
+            body: "Open the attached PDF to review your new benefits options. Enrollment closes tomorrow at 5 PM.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "HR/Benefits scam with a potentially malicious attachment. Uses urgency and trusted HR impersonation.",
+            redFlags: ["Fake HR domain.", "Unexpected attachment.", "Extreme urgency: 'closes tomorrow'."]
+        },
+        {
+            id: 11, from: "security@yourcompany-it.com", subject: "Password Expiration Notice",
+            body: "Your password will expire in 24 hours. Click here to reset your password now and maintain access to your account.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Fake password expiration notice. Legitimate IT never asks you to reset passwords via email links.",
+            redFlags: ["Password reset via email link (never legitimate).", "Artificial urgency.", "Generic sender address pretending to be internal IT."]
+        },
+        {
+            id: 12, from: "notifications@docs-share-secure.com", subject: "John shared a document with you",
+            body: "Click here to view the confidential document shared by John Smith.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Fake Google Docs/Dropbox sharing notification. Attempts to steal credentials via a fake login page.",
+            redFlags: ["Fake document sharing domain.", "Vague 'John Smith' with no context.", "Link leads to a credential harvesting page."]
+        },
+        {
+            id: 13, from: "update@chrome-security-alert.net", subject: "Critical Security Update",
+            body: "Your Chrome browser has a critical vulnerability. Download this update immediately to protect your computer.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Fake software update attack. Legitimate updates come through the software itself, not via email links.",
+            redFlags: ["Update via email (browsers update automatically in the background).", "Fake Chrome domain.", "Request to download a file from an email link."]
+        },
+        {
+            id: 14, from: "prince@nigeria-gov-official.org", subject: "Business Proposal",
+            body: "I am a prince from Nigeria. I need your help to transfer $10 million USD out of the country. Send me your bank details and a small processing fee to begin.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Classic 'Nigerian Prince' advance-fee scam. Unknown sender promising unrealistic money.",
+            redFlags: ["Unknown sender.", "Unrealistic promise of large sums of money.", "Request for personal banking information from a stranger."]
+        },
+        {
+            id: 15, from: "client@trusted-partner.com", subject: "RE: Contract Documents",
+            body: "Please find attached the signed contract. The password to open the PDF is: 123456",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Compromised sender attack. Attacker compromised a trusted partner's email and sent a malicious, password-protected attachment to bypass email scanners.",
+            redFlags: ["Password-protected attachment with the password provided in the same email.", "Unexpected reply to an old email chain.", "Generic content unrelated to previous conversation."]
+        },
+        {
+            id: 16, from: "invoice@supplier.com", subject: "Invoice Attached",
+            body: "Please open the attached HTML file to view your invoice.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Malicious attachment attack. HTML files can contain phishing links or scripts that bypass email security.",
+            redFlags: ["HTML attachment (invoices should be PDF).", "Request to open an executable-like file.", "No context for the invoice."]
+        },
+        {
+            id: 17, from: "security@yourcompany.com", subject: "Verify Your Account",
+            body: "To comply with new security policies, please scan the QR code below to verify your account on your mobile device.",
+            correctAnswer: "phish", correctText: "❌ Phishing (Quishing)",
+            explanation: "QR Code phishing (Quishing). QR codes bypass email security scanners and lead directly to phishing sites.",
+            redFlags: ["QR code instead of a visible, clickable URL.", "Vague 'verify your account' request.", "Cannot see the destination URL without scanning."]
+        },
+        {
+            id: 18, from: "manager@yourcompany.com", subject: "Project Update",
+            body: "Hi, following our meeting yesterday, please review the attached project proposal and provide your feedback by EOD.",
+            correctAnswer: "susp", correctText: "⚠️ Suspicious",
+            explanation: "Potential spear phishing or compromised account. Could be legitimate, but requires out-of-band verification due to the attachment.",
+            redFlags: ["Verify the sender's email address matches the manager's real email exactly.", "Confirm the meeting actually happened.", "Check if the attachment is expected."]
+        },
+        {
+            id: 19, from: "USBank Alerts (SMS)", subject: "Text Message",
+            body: "USBank: Your account has been locked due to suspicious activity. Click http://usbank-verify.xyz to unlock your account now.",
+            correctAnswer: "phish", correctText: "❌ Phishing (Smishing)",
+            explanation: "SMS phishing (Smishing). Fake bank alert via text message with a malicious link.",
+            redFlags: ["Fake URL: 'usbank-verify.xyz' is not US Bank.", "Urgency to 'unlock account'.", "Banks don't send account alerts via SMS with clickable links."]
+        },
+        {
+            id: 20, from: "Microsoft Support (Phone Call)", subject: "Voice Call Transcript",
+            body: "Caller: 'Hello, this is Microsoft Support. Your computer has a virus and is sending errors to us. We need remote access to fix it.'",
+            correctAnswer: "phish", correctText: "❌ Phishing (Vishing)",
+            explanation: "Voice phishing (Vishing). Scammer impersonates Microsoft support to gain remote access to the victim's computer.",
+            redFlags: ["Microsoft never makes unsolicited support calls.", "Request for remote access (e.g., AnyDesk, TeamViewer).", "Claims computer has a virus without providing verifiable evidence."]
+        },
+        {
+            id: 21, from: "security@facebook-alert-team.com", subject: "Someone logged into your account",
+            body: "New login detected from Moscow, Russia. If this wasn't you, click here immediately to secure your account and change your password.",
+            correctAnswer: "phish", correctText: "❌ Phishing",
+            explanation: "Social media phishing. Fake Facebook security alert using fear tactics to steal credentials.",
+            redFlags: ["Fake Facebook domain.", "Fear tactic: login from a foreign country.", "Link leads to a credential harvesting page."]
+        },
+        {
+            id: 22, from: "hr@yourcompany.com", subject: "Updated Holiday Schedule",
+            body: "Please review the attached PDF for the new holiday schedule for Q4. Thank you, HR Team.",
+            correctAnswer: "legit", correctText: "✅ Legitimate",
+            explanation: "Legitimate internal communication. Standard HR email with expected content and a safe attachment.",
+            redFlags: ["Sender domain matches the official company domain exactly.", "Routine, expected request.", "Safe PDF attachment without artificial urgency."]
+        },
+        {
+            id: 23, from: "alerts@chase.com", subject: "Recent Transaction",
+            body: "You made a purchase of $45.67 at Starbucks. If this wasn't you, please call us immediately at 1-800-935-9935.",
+            correctAnswer: "legit", correctText: "✅ Legitimate",
+            explanation: "Legitimate bank transaction alert. Provides a phone number for verification and contains no suspicious links.",
+            redFlags: ["Official Chase domain (@chase.com).", "No links in the email.", "Provides an official, verifiable phone number.", "Specific, realistic transaction details."]
+        },
+        {
+            id: 24, from: "tracking@fedex.com", subject: "Package Out for Delivery",
+            body: "Your package is out for delivery today. Track your package at fedex.com using tracking number: 123456789.",
+            correctAnswer: "legit", correctText: "✅ Legitimate",
+            explanation: "Legitimate FedEx notification. Directs the user to the official website manually, with no suspicious direct links.",
+            redFlags: ["Official FedEx domain (@fedex.com).", "Directs user to type the official website (no direct hyperlink).", "Provides a tracking number for independent verification."]
+        },
+        {
+            id: 25, from: "it@yourcompany.com", subject: "Password Reset Request",
+            body: "We received a password reset request for your account. If you didn't request this, please contact the IT Helpdesk at extension 5555.",
+            correctAnswer: "legit", correctText: "✅ Legitimate",
+            explanation: "Legitimate IT password reset notification. Provides an internal contact method and contains no suspicious links.",
+            redFlags: ["Official internal IT domain.", "No links in the email.", "Provides an internal extension for verification.", "Allows the user to confirm if they made the request."]
+        }
+ ];
+
+    let currentScenarioIndex = 0;
+    let selectedThreat = '';
+    let analystName = '';
+    let totalScore = 0;
+    let userAnswers = [];
+
+    function startMission() {
+        analystName = document.getElementById('analyst-name').value.trim();
+        if (!analystName) {
+            alert("Please enter your Analyst Name to begin.");
+            return;
+        }
+        loadScenario(0);
+        switchView('view-game');
+    }
+
+    function loadScenario(index) {
+        currentScenarioIndex = index;
+        const scenario = scenarios[index];
+        
+        document.getElementById('scenario-counter').innerText = `Scenario ${index + 1} of ${scenarios.length}`;
+        
+        // Populate text-based email viewer
+        document.getElementById('email-from').innerText = scenario.from;
+        document.getElementById('email-subject').innerText = scenario.subject;
+        document.getElementById('email-body').innerText = scenario.body;
+        
+        selectedThreat = '';
+        document.getElementById('explanation').value = '';
+        document.querySelectorAll('.choice-btn').forEach(btn => btn.className = 'choice-btn');
+    }
+
+    function selectChoice(type, btnElement) {
+        selectedThreat = type;
+        document.querySelectorAll('.choice-btn').forEach(btn => btn.className = 'choice-btn');
+        if (type === 'legit') btnElement.classList.add('selected-legit');
+        if (type === 'susp') btnElement.classList.add('selected-susp');
+        if (type === 'phish') btnElement.classList.add('selected-phish');
+    }
+
+    function submitAnalysis() {
+        const explanation = document.getElementById('explanation').value.trim();
+        
+        if (!selectedThreat) {
+            alert("Please select a threat level.");
+            return;
+        }
+        if (explanation.length < 20) {
+            alert("Your explanation is too short. As an analyst, you must provide detailed reasoning (at least 20 characters).");
+            return;
+        }
+
+        const scenario = scenarios[currentScenarioIndex];
+        
+        let scenarioScore = 30; // Base points
+        if (selectedThreat === scenario.correctAnswer) {
+            scenarioScore += 40; // Bonus for correct classification
+        }
+        
+        const keywords = ['url', 'link', 'urgent', 'password', 'grammar', 'spelling', 'attachment', 'sender', 'domain', 'http', 'suspicious', 'fake', 'gift card', 'verify', 'legitimate', 'official', 'https'];
+        const lowerExpl = explanation.toLowerCase();
+        let keywordMatches = 0;
+        keywords.forEach(word => {
+            if (lowerExpl.includes(word)) keywordMatches++;
+        });
+        scenarioScore += Math.min(keywordMatches * 10, 30); // Max 30 points for keywords
+
+        totalScore += scenarioScore;
+        userAnswers.push({
+            scenario: scenario.id,
+            userChoice: selectedThreat,
+            correctChoice: scenario.correctAnswer,
+            explanation: explanation,
+            score: scenarioScore
+        });
+
+        const isCorrect = selectedThreat === scenario.correctAnswer;
+        document.getElementById('debrief-title').innerText = isCorrect ? 
+            `✅ Correct! The answer is ${scenario.correctText}` : 
+            `❌ Incorrect. The correct answer is ${scenario.correctText}`;
+        document.getElementById('debrief-title').style.color = isCorrect ? 'var(--accent-green)' : 'var(--accent-red)';
+        
+        document.getElementById('debrief-explanation').innerText = scenario.explanation;
+        
+        const flagsList = document.getElementById('debrief-flags');
+        flagsList.innerHTML = '';
+        scenario.redFlags.forEach(flag => {
+            const li = document.createElement('li');
+            li.innerText = flag;
+            flagsList.appendChild(li);
+        });
+
+        document.getElementById('user-expl-display').innerText = `"${explanation}"`;
+        document.getElementById('scenario-score').innerText = `${scenarioScore} / 100 PTS`;
+
+        const nextBtn = document.getElementById('next-btn');
+        if (currentScenarioIndex === scenarios.length - 1) {
+            nextBtn.innerText = "View Final Report";
+            nextBtn.onclick = showFinalReport;
+        } else {
+            nextBtn.innerText = "Next Scenario";
+            nextBtn.onclick = nextScenario;
+        }
+
+        switchView('view-debrief');
+    }
+
+    function nextScenario() {
+        loadScenario(currentScenarioIndex + 1);
+        switchView('view-game');
+    }
+
+    function showFinalReport() {
+        document.getElementById('final-name').innerText = analystName;
+        document.getElementById('final-completed').innerText = `${scenarios.length} / ${scenarios.length}`;
+        document.getElementById('final-score').innerText = `${totalScore} / ${scenarios.length * 100} PTS`;
+        switchView('view-final');
+    }
+
+    function copyFinalReport() {
+        let reportText = `🕵️‍♂️ PHISHING DETECTIVE FINAL REPORT\n`;
+        reportText += `----------------------------------------\n`;
+        reportText += `Analyst: ${analystName}\n`;
+        reportText += `Final Score: ${totalScore} / ${scenarios.length * 100} PTS\n`;
+        reportText += `----------------------------------------\n`;
+        reportText += `SCENARIO BREAKDOWN:\n`;
+        
+        userAnswers.forEach((ans, idx) => {
+            const scenario = scenarios[idx];
+            reportText += `\n[Scenario ${idx + 1}] - ${scenario.subject}\n`;
+            reportText += `Your Choice: ${ans.userChoice.toUpperCase()} | Correct: ${ans.correctChoice.toUpperCase()}\n`;
+            reportText += `Score: ${ans.score}/100\n`;
+            reportText += `Your Reasoning: ${ans.explanation}\n`;
+        });
+        
+        reportText += `\n----------------------------------------\n`;
+        reportText += `Submitted for Instructor Review.`;
+
+        navigator.clipboard.writeText(reportText).then(() => {
+            alert("Final Report copied to clipboard! You can now paste it to your teacher.");
+        }).catch(() => {
+            alert("Could not copy automatically. Please highlight the report and copy it manually.");
+        });
+    }
+
+    function resetGame() {
+        currentScenarioIndex = 0;
+        selectedThreat = '';
+        analystName = '';
+        totalScore = 0;
+        userAnswers = [];
+        document.getElementById('analyst-name').value = '';
+        document.getElementById('next-btn').innerText = "Next Scenario";
+        document.getElementById('next-btn').onclick = nextScenario;
+        switchView('view-start');
+    }
+
+    function switchView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+</script>
+
+</body>
+</html>
